@@ -1,6 +1,7 @@
 package br.com.alura.screensound.principal;
 
 import br.com.alura.screensound.models.*;
+import br.com.alura.screensound.repository.AlbumRepository;
 import br.com.alura.screensound.repository.ArtistaRepository;
 import br.com.alura.screensound.repository.MusicaRepository;
 import br.com.alura.screensound.service.BuscaArtista;
@@ -16,17 +17,22 @@ public class Principal {
     private Scanner scan = new Scanner(System.in);
     private ArtistaRepository artRepository;
     private MusicaRepository musRepository;
+    private AlbumRepository albRepository;
     private final String ENDERECO = "https://musicbrainz.org/ws/2/";
-    private final String MUSICA_METHOD1 = "recording/?query=recording:";
-    private final String MUSICA_METHOD2 = "%20AND%20artist:";
+    private final String MUSICA_METHOD = "recording/?query=recording:%22";
+    private final String AND_ARTIST_METHOD = "%22%20AND%20artist:%22";
+    private final String ALBUM_METHOD1 = "release/?query=release:%22";
+
     private ConsumoAPI consumo = new ConsumoAPI();
     private ConverteDados conversor = new ConverteDados();
     private BuscaArtista buscaArtista = new BuscaArtista();
 
     public Principal(ArtistaRepository artRepository,
-                     MusicaRepository musRepository) {
+                     MusicaRepository musRepository,
+                     AlbumRepository albRepository) {
         this.artRepository = artRepository;
         this.musRepository = musRepository;
+        this.albRepository = albRepository;
     }
 
     public Principal() {
@@ -40,10 +46,11 @@ public class Principal {
                 ******* Screen Sound *******
                 
                 1- Cadastrar artistas
-                2- Cadastrar músicas
-                3- Listar músicas
-                4- Buscar músicas por artistas
-                5- Pesquisar dados sobre um artista
+                2- Cadastrar álbuns
+                3- Cadastrar músicas
+                4- Listar músicas
+                5- Buscar músicas por artistas
+                6- Pesquisar dados sobre um artista
                 
                 0 - Sair
                 """;
@@ -57,15 +64,18 @@ public class Principal {
                     cadastrarArtistas();
                     break;
                 case 2:
-                    cadastrarMusicas();
+                    cadstrarAlbuns();
                     break;
                 case 3:
-                    listarMusicas();
+                    cadastrarMusicas();
                     break;
                 case 4:
-                    buscarMusicasPorArtistas();
+                    listarMusicas();
                     break;
                 case 5:
+                    buscarMusicasPorArtistas();
+                    break;
+                case 6:
                     pesquisarDadosDoArtista();
                     break;
                 case 0:
@@ -84,7 +94,7 @@ public class Principal {
 
         while (opcaoNovo.equalsIgnoreCase("S")) {
             System.out.println("\nDigite o nome do artista:");
-            String nome = scan.nextLine().replace(" ", "%20");
+            String nome = scan.nextLine();
             var artista = buscaArtista.buscar(nome);
             System.out.println(artista);
             boolean cadastrado = artRepository.existsByNome(artista.getNome());
@@ -107,8 +117,8 @@ public class Principal {
             var nomeMusica = scan.nextLine().replace(" ", "%20");
             System.out.println("\nDigite o nome do artista:");
             String nome = scan.nextLine().replace(" ", "%20");
-            var json = consumo.obterDados(ENDERECO + MUSICA_METHOD1 +
-                nomeMusica + MUSICA_METHOD2 + nome + "&fmt=json");
+            var json = consumo.obterDados(ENDERECO + MUSICA_METHOD +
+                nomeMusica + AND_ARTIST_METHOD + nome + "%22&fmt=json");
             var listMusicas = conversor.obterDados(json, ListMusicas.class);
             DadosMusica dadosMusica = listMusicas.musicas().get(0);
             Musica musica = new Musica(dadosMusica, artRepository);
@@ -124,8 +134,34 @@ public class Principal {
         }
     }
 
+    private void cadstrarAlbuns() {
+
+        String opcaoNovo = "S";
+
+        while (opcaoNovo.equalsIgnoreCase("S")) {
+            System.out.println("\nDigite o nome do álbum:");
+            var nomeAlbum = scan.nextLine().replace(" ", "%20");
+            System.out.println("\nDigite o nome do artista:");
+            String nomeArt = scan.nextLine().replace(" ", "%20");
+            String json = consumo.obterDados(ENDERECO + ALBUM_METHOD1 +
+                    nomeAlbum + AND_ARTIST_METHOD +
+                    nomeArt + "%22&fmt=json");
+            var listAlbuns = conversor.obterDados(json, ListAlbuns.class);
+            var dadosAlbum = listAlbuns.listaAlbuns().get(0);
+            Album album = new Album(dadosAlbum, artRepository);
+            System.out.println(album);
+            boolean cadastrado = albRepository.existsByTitulo(album.getTitulo());
+            if (!cadastrado) {
+                albRepository.save(album);
+            } else {
+                System.out.println("\n*ÁLBUM JÁ CADASTRADO NO BANCO DE DADOS*");
+            }
+            System.out.println("\nDeseja cadastrar outro álbum? (S/N)");
+            opcaoNovo = scan.nextLine();
+        }
+    }
+
     private void listarMusicas() {
-        System.out.println("\n");
         var musicas = musRepository.findAll();
         musicas.stream()
                 .sorted(Comparator.comparing(e -> e.getArtista().getNome()))

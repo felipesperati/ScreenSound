@@ -31,14 +31,12 @@ public class Musica {
         this.titulo = dadosMusica.titulo();
         this.dataDeLancamento = dadosMusica.dataDeLancamento();
         var optionalArtista = repoGetArtByNome(dadosMusica, artRepository);
-        while (optionalArtista.isEmpty()) {
-            var novoArtista = buscaArtista.buscar(findNomeArtista(dadosMusica)
-                    .replace(" ", "%20"));
-            artRepository.save(novoArtista);
-            optionalArtista = repoGetArtByNome(dadosMusica, artRepository);
+        if (optionalArtista.isEmpty()) {
+            this.artista = buscaArtista.buscar(findNomeArtista(dadosMusica));
+            artRepository.save(this.artista);
+        } else {
+            this.artista = optionalArtista.get();
         }
-        var artista = optionalArtista.get();
-        this.artista = artista;
         artista.addMusica(this);
     }
 
@@ -90,12 +88,12 @@ public class Musica {
     }
 
     private Optional<Artista> repoGetArtByNome(DadosMusica dadosMusica, ArtistaRepository a) {
-        return a.getByNome(findNomeArtista(dadosMusica));
+        return a.buscaPorNome(findNomeArtista(dadosMusica));
     }
 
     @Override
     public String toString() {
-        return artista.getNome() + " - '" + titulo + "'";
+        return this.artista.getNome() + " - '" + this.titulo + "'";
 //                "Música: '" + titulo + "' - " + "Artista: " + artista.getNome();
     }
 }

@@ -20,7 +20,7 @@ public class Artista {
     private String dataDeFim;
     private String paisDeOrigem;
     private String classificacao;
-    @OneToMany(mappedBy = "artista")
+    @OneToMany(mappedBy = "artista", fetch = FetchType.EAGER)
     private List<Album> albuns = new ArrayList<>();
     @OneToMany(mappedBy = "artista", fetch = FetchType.EAGER)
     private List<Musica> musicas = new ArrayList<>();
@@ -71,8 +71,9 @@ public class Artista {
         return albuns;
     }
 
-    public void setAlbuns(List<Album> albuns) {
-        this.albuns = albuns;
+    public void addAlbum(Album album) {
+        this.albuns.add(album);
+        album.setArtista(this);
     }
 
     public List<Musica> getMusicas() {
@@ -81,10 +82,12 @@ public class Artista {
 
     public void addMusica(Musica musica) {
         this.musicas.add(musica);
+        musica.setArtista(this);
     }
 
     public void addMusicas(List<Musica> musicas) {
         this.musicas.addAll(musicas);
+        musicas.forEach(m -> m.setArtista(this));
     }
 
     public String getDataDeNascimento() {
@@ -121,12 +124,14 @@ public class Artista {
 
     @Override
     public String toString() {
-        return "Nome: '" + nome +"\'\n" +
-                "Data de Nascimento: " + dataDeNascimento + "\n" +
-                "País de Origem: " +paisDeOrigem + "\n" +
-                "Tipo: " + tipo + "\n" +
-                "Classificação: " + classificacao + "\n" +
-                "Data de Fim: " + dataDeFim;
+        return "Nome: '" + nome +"\'" +
+                "\nData de Nascimento: " + dataDeNascimento +
+                "\nPaís de Origem: " +paisDeOrigem +
+                "\nTipo: " + tipo +
+                "\nClassificação: " + classificacao +
+                "\nData de Fim: " + dataDeFim +
+                "\nLista de Álbuns: " + albuns +
+                "\nLista de Músicas: " + musicas;
     }
 }
 
